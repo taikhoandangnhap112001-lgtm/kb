@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#F5F3EE">
+<title>Kho Bạc — Sổ Tay Kỷ Luật</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#F5F3EE; --paper-deep:#EFEBE0; --rule:#DFD8C6;
+    --ink:#22291F; --ink-soft:#63705C; --ink-faint:#9AA391;
+    --jade:#2F6F4E; --jade-deep:#1F4D36; --jade-tint:#E4EEE6;
+    --brass:#B8863B; --brass-tint:#F1E3C6;
+    --brick:#B0413E; --brick-tint:#F4E1DF;
+    --surface:#FFFFFF;
+    --shadow: 0 1px 2px rgba(34,41,31,0.06), 0 4px 14px rgba(34,41,31,0.05);
+    --radius: 16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html{height:100%;}
+  html,body{margin:0; padding:0; background:var(--paper); color:var(--ink); font-family:'Inter',sans-serif;}
+  body{
+    min-height:100%;
+    background-image: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+    background-attachment:local;
+    overscroll-behavior-y:none;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  ::selection{background:var(--brass-tint);}
+  button{font-family:inherit; cursor:pointer; touch-action:manipulation;}
+  input,select{font-family:inherit;}
+  .app{max-width:480px; margin:0 auto; padding:0 16px;}
+  header.topbar{padding: calc(18px + env(safe-area-inset-top)) 16px 14px 16px; max-width:480px; margin:0 auto; display:flex; align-items:baseline; justify-content:space-between;}
+  header.topbar .brand{font-family:'Fraunces',serif; font-weight:600; font-size:21px;}
+  header.topbar .brand .stamp{color:var(--jade);}
+  header.topbar .date{font-size:12px; color:var(--ink-soft); font-family:'JetBrains Mono',monospace;}
+
+  .balance-card{background:var(--jade-deep); color:#F5F3EE; border-radius:20px; padding:20px 20px 18px; margin-bottom:16px; position:relative; overflow:hidden; box-shadow: var(--shadow);}
+  .balance-card::before{content:""; position:absolute; inset:0; background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 22px); pointer-events:none;}
+  .balance-card .label{font-size:11px; letter-spacing:1.2px; text-transform:uppercase; opacity:0.7; margin-bottom:6px;}
+  .balance-card .amount{font-family:'Fraunces',serif; font-weight:600; font-size:34px; line-height:1.1; font-variant-numeric: tabular-nums;}
+  .balance-card .amount .unit{font-size:16px; font-family:'Inter',sans-serif; font-weight:500; opacity:0.75; margin-left:6px;}
+  .balance-card .sub{margin-top:10px; font-size:12px; opacity:0.75; display:flex; gap:14px; flex-wrap:wrap;}
+
+  section{margin-bottom:22px;}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; gap:8px;}
+  .section-head h2{font-family:'Fraunces',serif; font-weight:600; font-size:15.5px; margin:0; display:flex; align-items:center; gap:8px;}
+  .section-head h2 .idx{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--brass); border:1px solid var(--brass); border-radius:20px; padding:1px 7px;}
+  .link-btn{background:none; border:none; color:var(--jade); font-size:12.5px; font-weight:700; padding:4px 0; white-space:nowrap;}
+
+  .card{background:var(--surface); border:1px solid var(--rule); border-radius:var(--radius); box-shadow:var(--shadow);}
+  .card + .card{margin-top:10px;}
+
+  .level-card{padding:16px;}
+  .level-card .top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .level-card .eyebrow{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:1px;}
+  .level-card .name{font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin-top:2px;}
+  .level-card .expline{font-size:11px; color:var(--ink-soft); margin-top:5px;}
+
+  .task{display:flex; align-items:center; gap:12px; padding:13px 14px;}
+  .task + .task{border-top:1px dashed var(--rule);}
+  .task .tick{width:26px; height:26px; border-radius:50%; border:2px solid var(--jade); flex:none; display:flex; align-items:center; justify-content:center; color:var(--jade); font-size:14px; font-weight:700; background:transparent;}
+  .task.done .tick{background:var(--jade); color:#fff;}
+  .task.done{opacity:0.72;}
+  .task .info{flex:1; min-width:0;}
+  .task .name{font-size:14.5px; font-weight:600; line-height:1.3;}
+  .task.done .name{color:var(--ink-faint); text-decoration:line-through;}
+  .task .meta{font-size:11.5px; color:var(--ink-soft); margin-top:2px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .task .meta .tag{background:var(--paper-deep); border-radius:20px; padding:1px 7px;}
+  .task .meta .exp{color:var(--jade);}
+  .task .reward{font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700; color:var(--brass); flex:none; text-align:right;}
+  .task .reward small{display:block; font-size:10px; color:var(--jade); font-weight:600;}
+  .task .del{background:none; border:none; color:var(--ink-faint); font-size:16px; padding:0 2px; flex:none;}
+  .task .lockmark{font-size:13px; color:var(--ink-faint); flex:none;}
+  .empty{padding:22px 14px; text-align:center; color:var(--ink-soft); font-size:13px;}
+  .add-btn{width:100%; background:var(--surface); border:1.5px dashed var(--rule); border-radius:var(--radius); padding:13px; color:var(--jade); font-weight:600; font-size:13.5px; margin-top:10px;}
+
+  .seal-row{display:flex; gap:6px; overflow-x:auto; padding:4px 2px 8px;}
+  .seal{width:30px; height:30px; border-radius:50%; flex:none; border:2px solid var(--rule); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink-faint);}
+  .seal.filled{border-color:var(--brick); color:var(--brick); background:var(--brick-tint); font-weight:700;}
+  .seal.today{box-shadow:0 0 0 2px var(--paper), 0 0 0 3.5px var(--jade);}
+  .streak-num{font-family:'Fraunces',serif; font-weight:700; font-size:26px; color:var(--jade);}
+
+  .cal-title{font-family:'Fraunces',serif; font-weight:600; font-size:14px; margin-bottom:10px; color:var(--ink);}
+  .cal-header{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:6px;}
+  .cal-header div{text-align:center; font-size:10px; font-weight:700; color:var(--ink-soft);}
+  .calendar-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .cal-cell{aspect-ratio:1; border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-faint); border:2px solid var(--rule); background:transparent;}
+  .cal-cell.blank{border:none; background:none;}
+  .cal-cell.filled{border-color:var(--brick); color:var(--brick); background:var(--brick-tint); font-weight:700;}
+  .cal-cell.today{box-shadow:0 0 0 2px var(--paper), 0 0 0 3.5px var(--jade);}
+
+  .fund{display:flex; align-items:center; gap:12px; padding:13px 14px;}
+  .fund + .fund{border-top:1px dashed var(--rule);}
+  .fund .dot{width:10px; height:10px; border-radius:50%; flex:none;}
+  .fund .info{flex:1;}
+  .fund .name{font-size:14px; font-weight:600;}
+  .fund .amount{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700;}
+
+  .transfer-panel{padding:14px;}
+  .field-row{display:flex; gap:8px; margin-bottom:10px;}
+  .field{flex:1; display:flex; flex-direction:column; gap:4px;}
+  .field label{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .field select, .field input{padding:9px 10px; border-radius:10px; border:1px solid var(--rule); font-size:13px; background:var(--paper);}
+  .backup-textarea{width:100%; height:110px; padding:10px; border-radius:10px; border:1px solid var(--rule); background:var(--paper); font-family:'JetBrains Mono',monospace; font-size:10.5px; line-height:1.5; resize:vertical; color:var(--ink);}
+  .btn-full{width:100%; padding:12px; border-radius:12px; border:none; background:var(--jade); color:#fff; font-weight:700; font-size:13.5px;}
+  .btn-full.secondary{background:var(--paper-deep); color:var(--ink); border:1px solid var(--rule);}
+  .btn-full.danger{background:var(--brick);}
+
+  .pkg{padding:13px 14px;}
+  .pkg + .pkg{border-top:1px dashed var(--rule);}
+  .pkg-top{display:flex; justify-content:space-between; align-items:center;}
+  .pkg-name{font-size:14px; font-weight:700;}
+  .pkg-rate{font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:700; color:var(--jade);}
+  .pkg-meta{font-size:11.5px; color:var(--ink-soft); margin-top:3px; display:flex; gap:10px;}
+  .pkg-del{background:none;border:none;color:var(--ink-faint);font-size:12px;margin-top:6px;}
+
+  .inv-item{padding:14px; }
+  .inv-item + .inv-item{border-top:1px dashed var(--rule);}
+  .inv-top{display:flex; justify-content:space-between; align-items:baseline;}
+  .inv-name{font-size:13.5px; font-weight:700;}
+  .inv-principal{font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:700;}
+  .inv-meta{font-size:11px; color:var(--ink-soft); margin:4px 0;}
+  .progress-bar{height:6px; background:var(--paper-deep); border-radius:6px; overflow:hidden; margin:8px 0;}
+  .progress-fill{height:100%; background:var(--jade); border-radius:6px;}
+  .inv-actions{display:flex; gap:8px; margin-top:6px;}
+  .inv-actions button{flex:1; padding:8px; border-radius:10px; font-size:12px; font-weight:700; border:1px solid var(--rule); background:var(--paper-deep);}
+  .inv-actions .claim{background:var(--jade); border-color:var(--jade); color:#fff;}
+  .inv-actions .early{background:var(--brick-tint); border-color:var(--brick); color:var(--brick);}
+  .status-badge{font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;}
+  .status-badge.active{background:var(--jade-tint); color:var(--jade-deep);}
+  .status-badge.matured{background:var(--brass-tint); color:var(--brass);}
+  .status-badge.withdrawn{background:var(--brick-tint); color:var(--brick);}
+
+  .shop-item{display:flex; align-items:center; gap:12px; padding:13px 14px;}
+  .shop-item + .shop-item{border-top:1px dashed var(--rule);}
+  .shop-item .info{flex:1;}
+  .shop-item .name{font-size:14px; font-weight:600;}
+  .shop-item .price{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--brass); font-weight:700; margin-top:2px;}
+  .buy-btn{background:var(--jade); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; flex:none;}
+  .use-btn{background:var(--brass); color:#fff; border:none; border-radius:10px; padding:8px 14px; font-size:12.5px; font-weight:700; flex:none;}
+  .shop-del{background:none;border:none;color:var(--ink-faint);font-size:15px;}
+
+  .chart-wrap{padding:16px 12px 10px;}
+  .chart-caption{font-size:11px; color:var(--ink-soft); text-align:right; padding:0 6px 10px;}
+
+  .modal-backdrop{position:fixed; inset:0; background:rgba(34,41,31,0.4); display:none; align-items:flex-end; justify-content:center; z-index:50;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--paper); width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom)); box-shadow:0 -8px 30px rgba(0,0,0,0.15); animation: slideUp .22s ease; max-height:85vh; overflow-y:auto;}
+  @keyframes slideUp{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .modal h3{font-family:'Fraunces',serif; margin:0 0 14px; font-size:18px;}
+  .modal p.desc{font-size:12.5px; color:var(--ink-soft); margin:-8px 0 14px; line-height:1.5;}
+  .type-toggle{display:flex; gap:8px; margin-bottom:12px;}
+  .type-toggle button{flex:1; padding:9px; border-radius:10px; border:1.5px solid var(--rule); background:var(--surface); font-size:12.5px; font-weight:600; color:var(--ink-soft);}
+  .type-toggle button.active{border-color:var(--jade); background:var(--jade-tint); color:var(--jade-deep);}
+  .modal-actions{display:flex; gap:8px; margin-top:16px;}
+  .modal-actions button{flex:1;}
+  .cancel-btn{padding:12px; border-radius:12px; background:var(--paper-deep); border:1px solid var(--rule); font-weight:600; font-size:13.5px; color:var(--ink-soft);}
+  .pool-list{margin:10px 0;}
+  .pool-row{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px dashed var(--rule);}
+  .pool-row .pname{flex:1; font-size:13px; font-weight:600;}
+  .pool-row .pmeta{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--brass); text-align:right;}
+  .pool-row .pmeta small{display:block; color:var(--jade);}
+  .pool-row button{background:none;border:none;color:var(--ink-faint);font-size:15px;}
+  .confirm-icon{width:44px; height:44px; border-radius:50%; background:var(--jade-tint); color:var(--jade-deep); display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:12px;}
+  .confirm-icon.warn{background:var(--brick-tint); color:var(--brick);}
+
+  .level-row{display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px dashed var(--rule);}
+  .level-row .lvl-num{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ink); width:24px; flex:none;}
+  .level-row .lvl-exp{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--brass); width:64px; flex:none;}
+  .level-row .lvl-title{flex:1; font-size:13px;}
+  .level-row button{background:none;border:none;color:var(--ink-faint);font-size:15px; flex:none;}
+  .level-actions-row{display:flex; gap:8px; margin-top:12px;}
+  .level-actions-row button{flex:1;}
+
+  nav.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--surface); border-top:1px solid var(--rule); padding: 8px 6px calc(8px + env(safe-area-inset-bottom)); display:flex; max-width:480px; margin:0 auto; box-shadow: 0 -2px 12px rgba(34,41,31,0.05);}
+  nav.tabbar .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--ink-faint); padding:6px 1px; font-size:10px; font-weight:600;}
+  nav.tabbar .tab.active{color:var(--jade);}
+  nav.tabbar .tab .ic{font-size:17px; line-height:1; display:flex; align-items:center; justify-content:center;}
+  nav.tabbar .tab .ic svg{display:block;}
+  .view{display:none;}
+  .view.active{display:block; animation:fadeIn .18s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .toast{position:fixed; left:50%; bottom:calc(94px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); background:var(--ink); color:var(--paper); font-size:12.5px; font-weight:600; padding:10px 16px; border-radius:30px; opacity:0; pointer-events:none; transition:all .25s ease; z-index:60; white-space:nowrap; box-shadow:0 6px 20px rgba(0,0,0,0.2); max-width:90vw; overflow:hidden; text-overflow:ellipsis;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---- celebration effects ---- */
+  @keyframes confettiFloat{
+    0%{transform:translate(0,0) scale(1) rotate(0deg); opacity:1;}
+    100%{transform:translate(var(--dx,0px), -90px) scale(0.5) rotate(180deg); opacity:0;}
+  }
+  .confetti-piece{position:fixed; z-index:75; pointer-events:none; font-size:20px; left:0; top:0; animation:confettiFloat 900ms ease-out forwards; will-change:transform,opacity;}
+
+  @keyframes levelupPop{
+    0%{transform:scale(0.6); opacity:0;}
+    55%{transform:scale(1.08); opacity:1;}
+    100%{transform:scale(1); opacity:1;}
+  }
+  @keyframes levelupGlow{
+    0%,100%{box-shadow:0 0 0 0 rgba(184,134,59,0.0);}
+    50%{box-shadow:0 0 0 14px rgba(184,134,59,0.12);}
+  }
+  .levelup-overlay{position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; background:rgba(34,41,31,0.5); animation:fadeIn .2s ease; padding:24px;}
+  .levelup-card{background:var(--surface); border-radius:22px; padding:30px 26px; text-align:center; max-width:300px; width:100%; animation:levelupPop .4s cubic-bezier(.34,1.56,.64,1), levelupGlow 1.8s ease-in-out infinite;}
+  .levelup-card .eyebrow{font-family:'Fraunces',serif; font-weight:700; font-size:12px; color:var(--brass); letter-spacing:2px; text-transform:uppercase;}
+  .levelup-card .lvl{font-family:'Fraunces',serif; font-weight:700; font-size:46px; color:var(--jade-deep); margin:8px 0 4px;}
+  .levelup-card .title{font-size:15px; font-weight:600; color:var(--ink); margin-bottom:18px;}
+  .levelup-card button{width:100%;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Kho Bạc <span class="stamp">記</span></div>
+  <div class="date" id="todayLabel"></div>
+</header>
+
+<div class="app">
+
+  <!-- ===== HÔM NAY ===== -->
+  <div class="view active" id="view-today">
+    <div class="balance-card">
+      <div class="label">Ví chung</div>
+      <div class="amount" id="mainBalance">0<span class="unit">xu</span></div>
+      <div class="sub"><span id="taskSub">0/0 nhiệm vụ hôm nay</span></div>
+    </div>
+
+    <section>
+      <div class="card level-card">
+        <div class="top">
+          <div>
+            <div class="eyebrow">Cấp độ</div>
+            <div class="name" id="levelTitleDisplay">—</div>
+          </div>
+          <button class="link-btn" onclick="openLevelModal()">Quản lý cấp độ</button>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="expProgressFill" style="width:0%;background:var(--brass);"></div></div>
+        <div class="expline" id="expDetail">0 EXP</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="idx">01</span> Nhiệm vụ hằng ngày</h2></div>
+      <div class="card" id="dailyTaskList"></div>
+      <button class="add-btn" onclick="openTaskModal('repeat')">+ Thêm nhiệm vụ hằng ngày</button>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2><span class="idx">02</span> Nhiệm vụ tăng cường</h2>
+        <button class="link-btn" onclick="openPoolModal()">Danh sách &amp; cài đặt</button>
+      </div>
+      <div class="card" id="bonusTaskList"></div>
+      <button class="add-btn" onclick="openTaskModal('once')">+ Thêm nhiệm vụ riêng</button>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2><span class="idx">03</span> Nhiệm vụ tuần</h2>
+        <button class="link-btn" onclick="openWeeklyPoolModal()">Danh sách &amp; cài đặt</button>
+      </div>
+      <div class="card" id="weeklyTaskList"></div>
+    </section>
+  </div>
+
+  <!-- ===== VÍ & QUỸ ===== -->
+  <div class="view" id="view-wallet">
+    <section>
+      <div class="section-head"><h2><span class="idx">01</span> Các quỹ</h2></div>
+      <div class="card" id="fundList"></div>
+      <button class="add-btn" onclick="openFundModal()">+ Tạo quỹ mới</button>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">02</span> Chuyển tiền giữa các quỹ</h2></div>
+      <div class="card transfer-panel">
+        <div class="field-row">
+          <div class="field"><label>Từ quỹ</label><select id="xferFrom"></select></div>
+          <div class="field"><label>Đến quỹ</label><select id="xferTo"></select></div>
+        </div>
+        <div class="field" style="margin-bottom:10px;"><label>Số xu</label><input type="number" id="xferAmount" placeholder="0" min="1"></div>
+        <button class="btn-full" onclick="requestTransfer()">Chuyển</button>
+      </div>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">03</span> Giao dịch gần đây <span style="font-weight:400;color:var(--ink-faint);font-size:11px;">(10 mới nhất)</span></h2></div>
+      <div class="card" id="txList"></div>
+    </section>
+  </div>
+
+  <!-- ===== ĐẦU TƯ ===== -->
+  <div class="view" id="view-invest">
+    <section>
+      <div class="section-head">
+        <h2><span class="idx">01</span> Gói tiết kiệm</h2>
+        <button class="link-btn" onclick="openPackageModal()">+ Tạo gói</button>
+      </div>
+      <div class="card" id="packageList"></div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="idx">02</span> Gửi tiết kiệm mới</h2></div>
+      <div class="card transfer-panel">
+        <div class="field" style="margin-bottom:10px;"><label>Từ quỹ nào</label><select id="investFromFund"></select></div>
+        <div class="field" style="margin-bottom:10px;"><label>Chọn gói</label><select id="investPackageSelect"></select></div>
+        <div class="field" style="margin-bottom:10px;"><label>Số xu gửi</label><input type="number" id="investAmount" placeholder="0" min="1"></div>
+        <button class="btn-full" onclick="requestInvest()">Gửi tiết kiệm</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="idx">03</span> Đang theo dõi</h2></div>
+      <div class="card" id="activeInvestList"></div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="idx">04</span> Lịch sử <span style="font-weight:400;color:var(--ink-faint);font-size:11px;">(10 mới nhất)</span></h2></div>
+      <div class="card" id="investHistoryList"></div>
+    </section>
+  </div>
+
+  <!-- ===== CỬA HÀNG ===== -->
+  <div class="view" id="view-shop">
+    <section>
+      <div class="section-head"><h2><span class="idx">01</span> Cửa hàng của bạn</h2></div>
+      <div class="card" id="shopList"></div>
+      <button class="add-btn" onclick="openShopModal()">+ Thêm món hàng</button>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">02</span> Vật phẩm đã mua</h2></div>
+      <div class="card" id="ownedList"></div>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">03</span> Lịch sử mua <span style="font-weight:400;color:var(--ink-faint);font-size:11px;">(10 mới nhất)</span></h2></div>
+      <div class="card" id="shopHistoryList"></div>
+    </section>
+  </div>
+
+  <!-- ===== TIẾN TRÌNH ===== -->
+  <div class="view" id="view-progress">
+    <section>
+      <div class="section-head"><h2><span class="idx">01</span> Xu nhận được mỗi ngày</h2></div>
+      <div class="card chart-wrap">
+        <svg id="chartSvg" viewBox="0 0 320 140" style="width:100%; height:auto; display:block;"></svg>
+        <div class="chart-caption" id="chartCaption"></div>
+      </div>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">02</span> Lịch hoàn thành</h2></div>
+      <div class="card" style="padding:14px;">
+        <div class="cal-title" id="calTitle"></div>
+        <div class="cal-header">
+          <div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+    </section>
+    <section>
+      <div class="section-head"><h2><span class="idx">03</span> Thống kê</h2></div>
+      <div class="card" style="padding:14px; display:flex; justify-content:space-between; text-align:center;">
+        <div><div class="streak-num" style="font-size:20px;" id="statTasks">0</div><div style="font-size:10.5px;color:var(--ink-soft);">nhiệm vụ xong</div></div>
+        <div><div class="streak-num" style="font-size:20px;" id="statCoins">0</div><div style="font-size:10.5px;color:var(--ink-soft);">xu kiếm được</div></div>
+        <div><div class="streak-num" style="font-size:20px;" id="statStreak">0</div><div style="font-size:10.5px;color:var(--ink-soft);">chuỗi dài nhất</div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2><span class="idx">04</span> Sao lưu dữ liệu</h2></div>
+      <div class="card" style="padding:14px;">
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
+          Dữ liệu được tự động lưu ngay trên trình duyệt của máy này (không cần mạng). Cách chắc chắn nhất để giữ bản sao trên điện thoại là "Xem & sao chép mã" — dán mã đó vào Ghi chú, Zalo hoặc Email của bạn để lưu giữ.
+        </div>
+        <button class="btn-full" style="margin-bottom:8px;" onclick="openBackupTextModal()">📋 Xem &amp; sao chép mã sao lưu</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-full secondary" onclick="exportBackup()">⬇ Thử tải file</button>
+          <button class="btn-full secondary" onclick="triggerImportBackup()">⬆ Khôi phục từ file</button>
+        </div>
+        <input type="file" id="backupImportInput" accept="application/json" style="display:none;">
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<nav class="tabbar">
+  <button class="tab active" data-view="today" onclick="switchView('today')"><span class="ic">☀</span>Hôm nay</button>
+  <button class="tab" data-view="wallet" onclick="switchView('wallet')"><span class="ic">⛁</span>Ví &amp; Quỹ</button>
+  <button class="tab" data-view="invest" onclick="switchView('invest')"><span class="ic">△</span>Đầu tư</button>
+  <button class="tab" data-view="shop" onclick="switchView('shop')"><span class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.4 10.1a2 2 0 0 1-2 1.7H7.4a2 2 0 0 1-2-1.7L4 9Z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg></span>Cửa hàng</button>
+  <button class="tab" data-view="progress" onclick="switchView('progress')"><span class="ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11"/><path d="M12 20V4"/><path d="M20 20v-7"/></svg></span>Tiến trình</button>
+</nav>
+
+<!-- Task Modal -->
+<div class="modal-backdrop" id="taskModalBackdrop">
+  <div class="modal">
+    <h3 id="taskModalTitle">Nhiệm vụ mới</h3>
+    <div class="field" style="margin-bottom:12px;"><label>Tên nhiệm vụ</label><input type="text" id="taskNameInput" placeholder="Ví dụ: Đọc sách 30 phút"></div>
+    <div class="type-toggle" id="taskTypeToggle">
+      <button class="active" data-type="repeat">Lặp lại hằng ngày</button>
+      <button data-type="once">Chỉ một lần</button>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Phần thưởng (xu)</label><input type="number" id="taskRewardInput" placeholder="50" min="1"></div>
+      <div class="field"><label>EXP nhận được</label><input type="number" id="taskExpInput" placeholder="10" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('taskModalBackdrop')">Hủy</button>
+      <button class="btn-full" onclick="saveTask()">Lưu nhiệm vụ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fund Modal -->
+<div class="modal-backdrop" id="fundModalBackdrop">
+  <div class="modal">
+    <h3>Quỹ mới</h3>
+    <div class="field" style="margin-bottom:12px;"><label>Tên quỹ</label><input type="text" id="fundNameInput" placeholder="Ví dụ: Quỹ mơ ước"></div>
+    <div class="field"><label>Màu đánh dấu</label>
+      <select id="fundColorInput">
+        <option value="#2F6F4E">Xanh ngọc</option><option value="#B8863B">Vàng đồng</option>
+        <option value="#B0413E">Đỏ gạch</option><option value="#4A6FA5">Xanh dương</option><option value="#7A5C9E">Tím</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('fundModalBackdrop')">Hủy</button>
+      <button class="btn-full" onclick="saveFund()">Tạo quỹ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Package Modal -->
+<div class="modal-backdrop" id="packageModalBackdrop">
+  <div class="modal">
+    <h3>Gói tiết kiệm mới</h3>
+    <p class="desc">% lãi tính cho trọn kỳ hạn (không phải theo năm). Ví dụ: 30 ngày, 6% nghĩa là gửi đủ 30 ngày sẽ nhận thêm 6% số tiền gốc.</p>
+    <div class="field" style="margin-bottom:12px;"><label>Tên gói</label><input type="text" id="pkgNameInput" placeholder="Ví dụ: Kỳ hạn 30 ngày"></div>
+    <div class="field-row">
+      <div class="field"><label>Kỳ hạn (ngày)</label><input type="number" id="pkgTermInput" placeholder="30" min="1"></div>
+      <div class="field"><label>Lãi trọn kỳ (%)</label><input type="number" id="pkgRateInput" placeholder="6" min="0" step="0.1"></div>
+    </div>
+    <div class="field"><label>Phạt nếu rút sớm (% số gốc bị trừ)</label><input type="number" id="pkgPenaltyInput" placeholder="15" min="0" max="100"></div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('packageModalBackdrop')">Hủy</button>
+      <button class="btn-full" onclick="savePackage()">Tạo gói</button>
+    </div>
+  </div>
+</div>
+
+<!-- Shop Modal -->
+<div class="modal-backdrop" id="shopModalBackdrop">
+  <div class="modal">
+    <h3>Món hàng mới</h3>
+    <div class="field" style="margin-bottom:12px;"><label>Tên món hàng</label><input type="text" id="shopNameInput" placeholder="Ví dụ: Gói mua sách"></div>
+    <div class="field"><label>Giá (xu)</label><input type="number" id="shopPriceInput" placeholder="300" min="1"></div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('shopModalBackdrop')">Hủy</button>
+      <button class="btn-full" onclick="saveShopItem()">Thêm vào cửa hàng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pool Modal -->
+<div class="modal-backdrop" id="poolModalBackdrop">
+  <div class="modal">
+    <h3>Danh sách &amp; cài đặt nhiệm vụ tăng cường</h3>
+    <p class="desc">Mỗi ngày (reset lúc 5:00 sáng) hệ thống sẽ tự chọn ngẫu nhiên một lần từ danh sách này làm nhiệm vụ tăng cường của bạn. Lưu cài đặt ở đây chỉ áp dụng cho lần random của ngày kế tiếp — không random lại nhiệm vụ của hôm nay.</p>
+    <div class="field" style="margin-bottom:10px;"><label>Số nhiệm vụ random mỗi ngày</label><input type="number" id="poolCountInput" min="0" value="2"></div>
+    <div class="pool-list" id="poolList"></div>
+    <div class="field-row" style="margin-top:6px;">
+      <div class="field"><label>Tên nhiệm vụ</label><input type="text" id="poolNameInput" placeholder="Tên nhiệm vụ"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Xu</label><input type="number" id="poolRewardInput" placeholder="30" min="1"></div>
+      <div class="field"><label>EXP</label><input type="number" id="poolExpInput" placeholder="10" min="0"></div>
+    </div>
+    <button class="btn-full secondary" style="margin-top:2px;" onclick="addPoolItem()">+ Thêm vào danh sách</button>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('poolModalBackdrop')">Đóng</button>
+      <button class="btn-full" onclick="savePoolSettings()">Lưu cài đặt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Weekly Pool Modal -->
+<div class="modal-backdrop" id="weeklyPoolModalBackdrop">
+  <div class="modal">
+    <h3>Danh sách &amp; cài đặt nhiệm vụ tuần</h3>
+    <p class="desc">Mỗi thứ 2 (reset lúc 5:00 sáng) hệ thống sẽ tự chọn ngẫu nhiên từ danh sách này làm nhiệm vụ tuần của bạn. "Số tích xác nhận" là số lần bạn cần bấm tích trước khi nhiệm vụ được tính hoàn thành — ví dụ "Chuỗi 6 ngày đọc sách" đặt số tích = 6. Lưu cài đặt ở đây chỉ áp dụng cho lần random của tuần kế tiếp — không random lại nhiệm vụ của tuần này.</p>
+    <div class="field" style="margin-bottom:10px;"><label>Số nhiệm vụ random mỗi tuần</label><input type="number" id="weeklyPoolCountInput" min="0" value="2"></div>
+    <div class="pool-list" id="weeklyPoolList"></div>
+    <div class="field-row" style="margin-top:6px;">
+      <div class="field"><label>Tên nhiệm vụ</label><input type="text" id="weeklyPoolNameInput" placeholder="Tên nhiệm vụ"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Xu</label><input type="number" id="weeklyPoolRewardInput" placeholder="80" min="1"></div>
+      <div class="field"><label>EXP</label><input type="number" id="weeklyPoolExpInput" placeholder="20" min="0"></div>
+      <div class="field"><label>Số tích xác nhận</label><input type="number" id="weeklyPoolConfirmInput" placeholder="1" min="1" value="1"></div>
+    </div>
+    <button class="btn-full secondary" style="margin-top:2px;" onclick="addWeeklyPoolItem()">+ Thêm vào danh sách</button>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('weeklyPoolModalBackdrop')">Đóng</button>
+      <button class="btn-full" onclick="saveWeeklyPoolSettings()">Lưu cài đặt</button>
+    </div>
+  </div>
+</div>
+
+<!-- Level Management Modal -->
+<div class="modal-backdrop" id="levelModalBackdrop">
+  <div class="modal">
+    <h3>Quản lý cấp độ</h3>
+    <p class="desc">Cột A: cấp độ · Cột B: số EXP cần đạt · Cột C: danh hiệu. Mỗi hàng trong file Excel tương ứng một cấp độ.</p>
+    <div id="levelList"></div>
+    <div class="level-actions-row">
+      <button class="cancel-btn" onclick="toggleLevelForm()">+ Thêm</button>
+      <button class="cancel-btn" onclick="document.getElementById('levelExcelInput').click()">📄 Excel</button>
+      <button class="cancel-btn" style="color:var(--brick);border-color:var(--brick);" onclick="requestClearAllLevels()">⚠ Xóa dữ liệu</button>
+    </div>
+    <input type="file" id="levelExcelInput" accept=".xlsx,.xls" style="display:none;">
+    <div id="levelFormWrap" style="display:none; margin-top:12px;">
+      <div class="field-row">
+        <div class="field"><label>Cấp độ</label><input type="number" id="levelNumInput" placeholder="1"></div>
+        <div class="field"><label>EXP cần đạt</label><input type="number" id="levelExpInput" placeholder="0"></div>
+      </div>
+      <div class="field" style="margin-bottom:8px;"><label>Danh hiệu</label><input type="text" id="levelTitleInput" placeholder="Người mới bắt đầu"></div>
+      <button class="btn-full secondary" onclick="addLevelEntry()">Lưu cấp độ</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-full" onclick="closeModal('levelModalBackdrop')">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Text Modal (guaranteed-to-work manual backup, no download needed) -->
+<div class="modal-backdrop" id="backupTextModalBackdrop">
+  <div class="modal">
+    <h3>Sao lưu &amp; khôi phục thủ công</h3>
+    <p class="desc">Sao chép đoạn mã bên dưới rồi dán vào Ghi chú, Zalo (gửi cho chính mình) hoặc Email để lưu giữ. Khi cần khôi phục, dán lại đoạn mã vào ô phía dưới.</p>
+    <div class="field" style="margin-bottom:8px;">
+      <label>Mã sao lưu hiện tại</label>
+      <textarea id="backupTextArea" class="backup-textarea" readonly onclick="this.select()"></textarea>
+    </div>
+    <button class="btn-full secondary" style="margin-bottom:18px;" onclick="copyBackupText()">📋 Sao chép mã này</button>
+
+    <div class="field" style="margin-bottom:8px;">
+      <label>Dán mã sao lưu cũ vào đây để khôi phục</label>
+      <textarea id="restoreTextArea" class="backup-textarea" placeholder="Dán đoạn mã đã sao chép trước đó..."></textarea>
+    </div>
+    <button class="btn-full danger" onclick="restoreFromPastedText()">Khôi phục từ đoạn văn bản này</button>
+
+    <div class="modal-actions">
+      <button class="btn-full secondary" onclick="closeModal('backupTextModalBackdrop')">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-backdrop" id="confirmModalBackdrop">
+  <div class="modal">
+    <div class="confirm-icon" id="confirmIcon">⚠</div>
+    <h3 id="confirmTitle">Xác nhận</h3>
+    <p class="desc" id="confirmMessage" style="margin-top:-6px;"></p>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal('confirmModalBackdrop')">Hủy</button>
+      <button class="btn-full" id="confirmYesBtn">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONSTANTS / HELPERS ============ */
+const STORAGE_KEY = 'kho-bac-state-v4';
+const DAY_MS = 24*60*60*1000;
+const HISTORY_CAP = 10;
+const uid = () => Math.random().toString(36).slice(2,10);
+const fmt = n => Math.round(n).toLocaleString('vi-VN');
+
+let state = null;
+
+/* ----- Vietnam game-day helpers (day resets at 05:00 VN time = UTC+7) ----- */
+function gameDateFor(ts){
+  const vnMs = ts + 7*3600*1000;
+  const vnDate = new Date(vnMs);
+  let y=vnDate.getUTCFullYear(), m=vnDate.getUTCMonth(), d=vnDate.getUTCDate(), h=vnDate.getUTCHours();
+  let base = new Date(Date.UTC(y,m,d,12,0,0));
+  if(h<5){ base.setUTCDate(base.getUTCDate()-1); }
+  return base;
+}
+function dateKey(d){ return d.toISOString().slice(0,10); }
+function todayStr(){ return dateKey(gameDateFor(Date.now())); }
+function gameDateForTs(ts){ return dateKey(gameDateFor(ts)); }
+function gameDateOffset(daysAgo){ const d=new Date(gameDateFor(Date.now())); d.setUTCDate(d.getUTCDate()-daysAgo); return dateKey(d); }
+
+/* ============ STATE ============ */
+function defaultState(){
+  return {
+    version: 4,
+    funds: [
+      {id:'general', name:'Ví chung', color:'#B8863B', balance:0, kind:'normal', locked:true},
+      {id:'save', name:'Tiết kiệm', color:'#4A6FA5', balance:0, kind:'normal'},
+    ],
+    tasks: [
+      {id:uid(), name:'Đọc sách 20 phút', type:'repeat', reward:40, exp:10, lastDone:null, timesDone:0, active:true, source:'manual'},
+      {id:uid(), name:'Viết 500 chữ', type:'repeat', reward:60, exp:15, lastDone:null, timesDone:0, active:true, source:'manual'},
+    ],
+    taskPool: [
+      {id:uid(), name:'Đọc thêm 1 chương sách', reward:30, exp:8},
+      {id:uid(), name:'Viết nhật ký cảm hứng', reward:25, exp:8},
+      {id:uid(), name:'Chỉnh sửa 1 đoạn bản thảo', reward:45, exp:12},
+    ],
+    weeklyTaskPool: [
+      {id:uid(), name:'Hoàn thiện 1 hồ sơ nhân vật', reward:120, exp:30, confirmCount:1},
+      {id:uid(), name:'Viết review sách cho blog', reward:100, exp:25, confirmCount:1},
+      {id:uid(), name:'Rà lỗi chính tả 1 chương đã viết', reward:80, exp:20, confirmCount:1},
+    ],
+    settings: {dailyBonusCount: 2, weeklyBonusCount: 2},
+    lastBonusGenDate: null,
+    lastWeeklyGenDate: null,
+    investPackages: [
+      {id:uid(), name:'Kỳ hạn 7 ngày', termDays:7, ratePercent:2, penaltyPercent:20},
+      {id:uid(), name:'Kỳ hạn 30 ngày', termDays:30, ratePercent:6, penaltyPercent:15},
+      {id:uid(), name:'Kỳ hạn 90 ngày', termDays:90, ratePercent:15, penaltyPercent:10},
+    ],
+    investments: [],
+    shopItems: [
+      {id:uid(), name:'Gói mua sách', price:300},
+      {id:uid(), name:'Vé xem phim', price:200},
+    ],
+    inventory: [],
+    purchaseLog: [],
+    playerExp: 0,
+    levels: [
+      {id:uid(), level:1, expNeeded:0, title:'Người mới bắt đầu'},
+      {id:uid(), level:2, expNeeded:100, title:'Học viên chăm chỉ'},
+      {id:uid(), level:3, expNeeded:300, title:'Thợ rèn kỷ luật'},
+      {id:uid(), level:4, expNeeded:700, title:'Bậc thầy thói quen'},
+    ],
+    transactions: [],
+    streakDates: [],
+    netWorthHistory: [],
+    dailyEarnings: [],
+    stats: {maxStreak:0, totalCoinsEarned:0}
+  };
+}
+
+function ensureStateDefaults(){
+  const d = defaultState();
+  if(!state || typeof state !== 'object') state = d;
+  if(!Array.isArray(state.funds) || state.funds.length===0) state.funds = d.funds;
+  if(!Array.isArray(state.tasks)) state.tasks = d.tasks;
+  if(!state.taskPool) state.taskPool = d.taskPool;
+  if(!state.weeklyTaskPool) state.weeklyTaskPool = d.weeklyTaskPool;
+  if(!state.settings) state.settings = d.settings;
+  if(state.settings.dailyBonusCount===undefined) state.settings.dailyBonusCount = 2;
+  if(state.settings.weeklyBonusCount===undefined) state.settings.weeklyBonusCount = 2;
+  if(!state.investPackages) state.investPackages = d.investPackages;
+  if(!state.investments) state.investments = [];
+  if(!state.shopItems) state.shopItems = d.shopItems;
+  if(!state.inventory) state.inventory = [];
+  if(!state.purchaseLog) state.purchaseLog = [];
+  if(typeof state.playerExp !== 'number') state.playerExp = 0;
+  if(!state.levels) state.levels = d.levels;
+  if(!state.transactions) state.transactions = [];
+  if(!state.streakDates) state.streakDates = [];
+  if(!state.netWorthHistory) state.netWorthHistory = [];
+  if(!state.dailyEarnings) state.dailyEarnings = [];
+  if(!state.stats) state.stats = {maxStreak:0, totalCoinsEarned:0};
+  if(state.stats.totalCoinsEarned===undefined){
+    state.stats.totalCoinsEarned = state.transactions.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  }
+  if(state.lastBonusGenDate===undefined) state.lastBonusGenDate = null;
+  if(state.lastWeeklyGenDate===undefined) state.lastWeeklyGenDate = null;
+  // backfill confirmCount on weekly pool items and confirm progress on weekly task instances from older versions
+  if(Array.isArray(state.weeklyTaskPool)){
+    state.weeklyTaskPool.forEach(p=>{ if(!p.confirmCount || p.confirmCount<1) p.confirmCount = 1; });
+  }
+  if(Array.isArray(state.tasks)){
+    state.tasks.forEach(t=>{
+      if(t.period==='weekly'){
+        if(!t.confirmTarget || t.confirmTarget<1) t.confirmTarget = 1;
+        if(typeof t.confirmProgress !== 'number') t.confirmProgress = 0;
+        if(t.lastTickDate===undefined) t.lastTickDate = null;
+      }
+    });
+  }
+  // drop leftover fields from older versions (timer, completion bonus %) — harmless if absent
+  delete state.timer;
+  if(state.settings) delete state.settings.dailyCompletionBonusPercent;
+  delete state.bonusAwardedDate;
+}
+
+/* ---- Storage layer: localStorage is the real on-device store ---- */
+function readLocalStorage(){
+  try{ return localStorage.getItem(STORAGE_KEY); }
+  catch(e){ console.error('Không đọc được localStorage', e); return null; }
+}
+function writeLocalStorage(json){
+  try{ localStorage.setItem(STORAGE_KEY, json); return true; }
+  catch(e){ console.error('Không ghi được localStorage', e); return false; }
+}
+
+async function loadState(){
+  let raw = readLocalStorage();
+  if(!raw){
+    try{
+      if(window.storage && typeof window.storage.get==='function'){
+        const res = await window.storage.get(STORAGE_KEY);
+        if(res && res.value) raw = res.value;
+      }
+    }catch(e){ /* not running inside Claude.ai preview — that's fine */ }
+  }
+  try{ state = raw ? JSON.parse(raw) : defaultState(); }
+  catch(e){ state = defaultState(); }
+  ensureStateDefaults();
+
+  generateDailyBonusIfNeeded();
+  generateWeeklyBonusIfNeeded();
+  recordNetWorthSnapshot();
+  render();
+  checkMaturedInvestments(true);
+
+  if(!writeLocalStorage(JSON.stringify(state))){
+    showToast('⚠️ Trình duyệt chặn lưu trữ cục bộ — dữ liệu có thể không được giữ lại');
+  }
+}
+
+let saveTimeout = null;
+function saveState(){ clearTimeout(saveTimeout); saveTimeout = setTimeout(saveStateImmediate, 250); }
+async function saveStateImmediate(){
+  const json = JSON.stringify(state);
+  const ok = writeLocalStorage(json);
+  if(!ok) showToast('⚠️ Không lưu được dữ liệu trên máy');
+  try{
+    if(window.storage && typeof window.storage.set==='function'){ await window.storage.set(STORAGE_KEY, json); }
+  }catch(e){ /* ignore — localStorage above is the source of truth */ }
+}
+
+/* ---- Backup export / import ---- */
+async function exportBackup(){
+  const dataStr = JSON.stringify(state, null, 2);
+  const filename = `kho-bac-backup-${todayStr()}.json`;
+  const blob = new Blob([dataStr], {type:'application/json'});
+
+  // On phones, the native share sheet lets the person pick exactly where to
+  // save (Files, Google Drive, Zalo, email...) instead of silently dropping
+  // the file in a Downloads folder they may not be able to find.
+  try{
+    const file = new File([blob], filename, {type:'application/json'});
+    if(navigator.canShare && navigator.share && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Sao lưu Kho Bạc', text:'File sao lưu dữ liệu Kho Bạc'});
+      showToast('Đã mở hộp thoại lưu file');
+      return;
+    }
+  }catch(e){
+    if(e && e.name==='AbortError') return; // person cancelled the share sheet — not an error
+    // fall through to the classic download below
+  }
+
+  try{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Đã tải file — kiểm tra thư mục Tải xuống / Downloads');
+  }catch(e){ showToast('Không thể tạo file sao lưu'); }
+}
+function triggerImportBackup(){ document.getElementById('backupImportInput').click(); }
+
+/* ---- Guaranteed manual backup: show the raw JSON so it can be copied by
+   hand into Notes/Zalo/Email. This has no dependency on download/share APIs
+   behaving correctly, which vary wildly across mobile browsers & webviews. ---- */
+function openBackupTextModal(){
+  document.getElementById('backupTextArea').value = JSON.stringify(state, null, 2);
+  document.getElementById('restoreTextArea').value = '';
+  document.getElementById('backupTextModalBackdrop').classList.add('open');
+}
+async function copyBackupText(){
+  const ta = document.getElementById('backupTextArea');
+  ta.focus(); ta.select();
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(ta.value);
+      showToast('Đã sao chép — dán vào Ghi chú/Zalo để lưu giữ');
+      return;
+    }
+  }catch(e){ /* fall through to legacy method */ }
+  try{
+    const ok = document.execCommand('copy');
+    showToast(ok ? 'Đã sao chép — dán vào Ghi chú/Zalo để lưu giữ' : 'Không sao chép được, hãy tự bôi đen và sao chép');
+  }catch(e){ showToast('Không sao chép được, hãy tự bôi đen và sao chép'); }
+}
+function restoreFromPastedText(){
+  const raw = document.getElementById('restoreTextArea').value.trim();
+  if(!raw){ showToast('Hãy dán mã sao lưu vào ô trước'); return; }
+  let parsed;
+  try{ parsed = JSON.parse(raw); }
+  catch(e){ showToast('Mã sao lưu không hợp lệ'); return; }
+  openConfirm('Khôi phục dữ liệu', 'Toàn bộ dữ liệu hiện tại trên máy sẽ bị THAY THẾ bằng dữ liệu vừa dán. Bạn có chắc chắn?', ()=>{
+    state = parsed;
+    ensureStateDefaults();
+    saveStateImmediate();
+    recordNetWorthSnapshot();
+    render();
+    closeModal('backupTextModalBackdrop');
+    showToast('Đã khôi phục dữ liệu');
+  }, true);
+}
+
+/* ============ TRANSACTION LOG (capped to 10 most recent) ============ */
+function pushTransaction(desc, amount, fundId){
+  state.transactions.unshift({id:uid(), ts:Date.now(), desc, amount, fundId});
+  if(state.transactions.length > HISTORY_CAP) state.transactions.length = HISTORY_CAP;
+  if(amount>0) state.stats.totalCoinsEarned = (state.stats.totalCoinsEarned||0) + amount;
+}
+function pushPurchaseLog(name, price){
+  state.purchaseLog.unshift({id:uid(), ts:Date.now(), name, price});
+  if(state.purchaseLog.length > HISTORY_CAP) state.purchaseLog.length = HISTORY_CAP;
+}
+function trimInvestmentHistory(){
+  const active = state.investments.filter(i=>i.status==='active');
+  const history = state.investments.filter(i=>i.status!=='active').slice(0, HISTORY_CAP);
+  state.investments = [...active, ...history];
+}
+
+/* ============ DAILY BONUS TASK GENERATION (full reset at 05:00 VN) ============ */
+function generateDailyBonusIfNeeded(){
+  const today = todayStr();
+  if(state.lastBonusGenDate === today) return;
+  regenerateBonusTasks();
+  state.lastBonusGenDate = today;
+}
+function regenerateBonusTasks(){
+  // wipe ALL "nhiệm vụ tăng cường" (once-type, non-weekly), whether done or
+  // not, whether manually added or from the pool — the section fully
+  // refreshes each day. Weekly tasks (period==='weekly') are untouched here.
+  state.tasks = state.tasks.filter(t => !(t.type==='once' && t.period!=='weekly'));
+  const count = Math.max(0, Math.min(state.settings.dailyBonusCount||0, state.taskPool.length));
+  const pool = [...state.taskPool];
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const picked = pool.slice(0, count);
+  picked.forEach(p=>{
+    state.tasks.push({id:uid(), name:p.name, type:'once', reward:p.reward, exp:p.exp||0, active:true, timesDone:0, lastDone:null, source:'pool'});
+  });
+}
+
+/* ============ WEEKLY TASK GENERATION (full reset Mondays at 05:00 VN) ============ */
+function currentWeekMondayKey(){
+  const gd = gameDateFor(Date.now()); // UTC-noon Date whose Y/M/D = current VN game-day
+  const dow = gd.getUTCDay(); // 0=Sun..6=Sat
+  const backToMonday = (dow===0) ? 6 : dow-1;
+  const monday = new Date(gd);
+  monday.setUTCDate(monday.getUTCDate()-backToMonday);
+  return dateKey(monday);
+}
+function generateWeeklyBonusIfNeeded(){
+  const weekKey = currentWeekMondayKey();
+  if(state.lastWeeklyGenDate === weekKey) return;
+  regenerateWeeklyTasks();
+  state.lastWeeklyGenDate = weekKey;
+}
+function regenerateWeeklyTasks(){
+  state.tasks = state.tasks.filter(t => t.period !== 'weekly');
+  const count = Math.max(0, Math.min(state.settings.weeklyBonusCount||0, state.weeklyTaskPool.length));
+  const pool = [...state.weeklyTaskPool];
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const picked = pool.slice(0, count);
+  picked.forEach(p=>{
+    state.tasks.push({id:uid(), name:p.name, type:'once', period:'weekly', reward:p.reward, exp:p.exp||0, active:true, timesDone:0, lastDone:null, source:'weeklypool', confirmTarget:Math.max(1,p.confirmCount||1), confirmProgress:0, lastTickDate:null});
+  });
+}
+
+
+/* ============ INVESTMENTS ============ */
+function checkMaturedInvestments(silent){
+  const now = Date.now();
+  let maturedCount = 0;
+  state.investments.forEach(inv=>{ if(inv.status==='active' && now >= inv.maturityTs) maturedCount++; });
+  if(maturedCount>0 && !silent) showToast(`${maturedCount} khoản đầu tư đã đáo hạn — vào tab Đầu tư để nhận lãi!`);
+}
+
+function recordNetWorthSnapshot(){
+  const fundsTotal = state.funds.reduce((s,f)=>s+f.balance,0);
+  const investTotal = state.investments.filter(i=>i.status==='active').reduce((s,i)=>s+i.principal,0);
+  const total = fundsTotal + investTotal;
+  const today = todayStr();
+  const last = state.netWorthHistory[state.netWorthHistory.length-1];
+  if(!last || last.date !== today){
+    state.netWorthHistory.push({date:today, total});
+    if(state.netWorthHistory.length > 60) state.netWorthHistory.shift();
+  }else{ last.total = total; }
+}
+
+/* Tracks how many xu were actually earned from completing tasks each day —
+   used for the "xu nhận được mỗi ngày" bar chart, separate from the
+   cumulative net-worth total which is much harder to read day to day. */
+function addDailyEarning(amount){
+  const key = todayStr();
+  let entry = state.dailyEarnings.find(e=>e.date===key);
+  if(!entry){ entry = {date:key, amount:0}; state.dailyEarnings.push(entry); }
+  entry.amount += amount;
+  if(state.dailyEarnings.length > 60) state.dailyEarnings.shift();
+}
+
+/* ============ VIEW SWITCH / MISC ============ */
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.view===name));
+  window.scrollTo(0,0);
+  if(name==='progress') drawChart();
+  if(name==='invest') checkMaturedInvestments(false);
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+/* ---- celebration effects: small confetti burst on task completion, and a
+   distinct level-up overlay when the player's level actually increases ---- */
+function celebrateTaskComplete(){
+  const symbols = ['✦','●','◆','✧','★'];
+  const colors = ['#2F6F4E','#B8863B','#1F4D36'];
+  const cx = window.innerWidth/2;
+  const cy = window.innerHeight*0.32;
+  const count = 10;
+  for(let i=0;i<count;i++){
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.textContent = symbols[i % symbols.length];
+    el.style.color = colors[i % colors.length];
+    const angle = (Math.PI*2*i)/count + (Math.random()*0.4-0.2);
+    const dist = 36 + Math.random()*36;
+    el.style.left = cx + 'px';
+    el.style.top = cy + 'px';
+    el.style.setProperty('--dx', (Math.cos(angle)*dist).toFixed(1)+'px');
+    document.body.appendChild(el);
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 950);
+  }
+}
+function celebrateLevelUp(levelObj){
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = `<div class="levelup-card">
+      <div class="eyebrow">Lên cấp!</div>
+      <div class="lvl">Cấp ${levelObj.level}</div>
+      <div class="title">${escapeHtml(levelObj.title)}</div>
+      <button class="btn-full">Tuyệt vời!</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const dismiss = ()=>{ if(overlay.parentNode) overlay.remove(); };
+  overlay.querySelector('button').addEventListener('click', dismiss);
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) dismiss(); });
+  setTimeout(dismiss, 4500);
+}
+
+/* ============ CONFIRM MODAL ============ */
+function openConfirm(title, message, onYes, danger){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmIcon').className = 'confirm-icon' + (danger?' warn':'');
+  document.getElementById('confirmIcon').textContent = danger ? '⚠' : '✓';
+  const btn = document.getElementById('confirmYesBtn');
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  if(danger){ newBtn.classList.add('danger'); } else { newBtn.classList.remove('danger'); }
+  newBtn.addEventListener('click', ()=>{ closeModal('confirmModalBackdrop'); onYes(); });
+  document.getElementById('confirmModalBackdrop').classList.add('open');
+}
+
+/* ============ TASKS ============ */
+function isDoneToday(task){
+  if(task.type==='once') return !task.active;
+  return task.lastDone === todayStr();
+}
+function requestCompleteTask(id){
+  const task = state.tasks.find(t=>t.id===id);
+  if(!task || isDoneToday(task)) return;
+  openConfirm('Xác nhận hoàn thành', `Đánh dấu "${task.name}" là hoàn thành và nhận ${fmt(task.reward)} xu + ${task.exp||0} EXP? Sau khi xác nhận sẽ không thể hoàn tác.`, ()=>completeTask(id));
+}
+/* Weekly tasks need N separate confirmation ticks (e.g. "Chuỗi 6 ngày đọc
+   sách" needs 6 taps). Every single tick — including the final one — asks
+   for confirmation, since each tick represents a real claim ("tôi đã đọc
+   hôm nay") and can't be undone once confirmed. The final tick additionally
+   grants the reward and locks the task. Only one tick is allowed per game-day
+   (resets at 05:00 VN) so an accidental double-tap can't skew the count. */
+function tickWeeklyTask(id){
+  const task = state.tasks.find(t=>t.id===id);
+  if(!task || task.period!=='weekly' || isDoneToday(task)) return;
+  if(task.lastTickDate === todayStr()){
+    showToast('Hôm nay đã tích rồi — quay lại sau 5:00 sáng mai nhé');
+    return;
+  }
+  const target = task.confirmTarget||1;
+  const current = task.confirmProgress||0;
+  const next = current+1;
+  if(next >= target){
+    openConfirm('Xác nhận lần tích cuối', `Đây là lần tích ${next}/${target} cho "${task.name}" — lần cuối cùng. Sau khi xác nhận, nhiệm vụ sẽ hoàn thành và nhận ${fmt(task.reward)} xu + ${task.exp||0} EXP. Không thể hoàn tác.`, ()=>{
+      task.confirmProgress = target;
+      task.lastTickDate = todayStr();
+      completeTask(id);
+    });
+  } else {
+    openConfirm('Xác nhận lần tích', `Tích lần ${next}/${target} cho "${task.name}"? Không thể hoàn tác lần tích này. Mỗi ngày chỉ tích được 1 lần.`, ()=>{
+      task.confirmProgress = next;
+      task.lastTickDate = todayStr();
+      saveState(); render();
+      showToast(`Đã tích ${next}/${target} lần cho "${task.name}"`);
+    });
+  }
+}
+function completeTask(id){
+  const task = state.tasks.find(t=>t.id===id);
+  if(!task || isDoneToday(task)) return;
+  const prevLevel = getLevelInfo().current;
+  if(task.type==='repeat'){ task.lastDone = todayStr(); } else { task.active = false; }
+  task.timesDone = (task.timesDone||0) + 1;
+  const gen = state.funds.find(f=>f.id==='general');
+  gen.balance += task.reward;
+  state.playerExp += (task.exp||0);
+  pushTransaction('Hoàn thành: '+task.name, task.reward, 'general');
+  addStreakToday();
+  addDailyEarning(task.reward);
+  recordNetWorthSnapshot();
+  saveState();
+  render();
+  showToast(`+${task.reward} xu, +${task.exp||0} EXP — đã khóa!`);
+  celebrateTaskComplete();
+  const newLevel = getLevelInfo().current;
+  if(newLevel && (!prevLevel || newLevel.level !== prevLevel.level)){
+    setTimeout(()=>celebrateLevelUp(newLevel), 450);
+  }
+}
+function deleteTask(id, ev){
+  ev.stopPropagation();
+  const task = state.tasks.find(t=>t.id===id);
+  if(task && isDoneToday(task)) return;
+  openConfirm('Xóa nhiệm vụ', `Xóa nhiệm vụ "${task.name}"?`, ()=>{
+    state.tasks = state.tasks.filter(t=>t.id!==id);
+    saveState(); render();
+  }, true);
+}
+function addStreakToday(){
+  const t = todayStr();
+  if(!state.streakDates.includes(t)) state.streakDates.push(t);
+  const cur = computeStreak();
+  if(cur > state.stats.maxStreak) state.stats.maxStreak = cur;
+}
+function computeStreak(){
+  const set = new Set(state.streakDates);
+  let count = 0, i = set.has(todayStr()) ? 0 : 1;
+  while(true){
+    const k = gameDateOffset(i);
+    if(set.has(k)){ count++; i++; } else break;
+  }
+  return count;
+}
+
+/* ============ TASK MODAL ============ */
+let taskTypeSelected = 'repeat';
+function openTaskModal(defaultType){
+  document.getElementById('taskNameInput').value=''; document.getElementById('taskRewardInput').value=''; document.getElementById('taskExpInput').value='';
+  taskTypeSelected = defaultType||'repeat';
+  document.getElementById('taskModalTitle').textContent = taskTypeSelected==='repeat' ? 'Nhiệm vụ hằng ngày mới' : 'Nhiệm vụ tăng cường mới';
+  document.querySelectorAll('#taskTypeToggle button').forEach(b=>b.classList.toggle('active', b.dataset.type===taskTypeSelected));
+  document.getElementById('taskModalBackdrop').classList.add('open');
+}
+document.getElementById('taskTypeToggle').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  taskTypeSelected = btn.dataset.type;
+  document.querySelectorAll('#taskTypeToggle button').forEach(b=>b.classList.toggle('active', b===btn));
+  document.getElementById('taskModalTitle').textContent = taskTypeSelected==='repeat' ? 'Nhiệm vụ hằng ngày mới' : 'Nhiệm vụ tăng cường mới';
+});
+function saveTask(){
+  const name = document.getElementById('taskNameInput').value.trim();
+  const reward = parseInt(document.getElementById('taskRewardInput').value) || 0;
+  const exp = parseInt(document.getElementById('taskExpInput').value) || 0;
+  if(!name){ showToast('Hãy đặt tên cho nhiệm vụ'); return; }
+  if(reward<=0){ showToast('Phần thưởng phải lớn hơn 0'); return; }
+  state.tasks.push({id:uid(), name, type:taskTypeSelected, reward, exp, lastDone:null, timesDone:0, active:true, source:'manual'});
+  saveState(); closeModal('taskModalBackdrop'); render();
+  showToast('Đã thêm nhiệm vụ');
+}
+
+/* ============ POOL MODAL ============ */
+function openPoolModal(){
+  document.getElementById('poolCountInput').value = state.settings.dailyBonusCount||0;
+  document.getElementById('poolNameInput').value=''; document.getElementById('poolRewardInput').value=''; document.getElementById('poolExpInput').value='';
+  renderPoolList();
+  document.getElementById('poolModalBackdrop').classList.add('open');
+}
+function renderPoolList(){
+  const el = document.getElementById('poolList');
+  if(state.taskPool.length===0){ el.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);padding:8px 0;">Danh sách trống.</div>'; return; }
+  el.innerHTML = state.taskPool.map(p=>`
+    <div class="pool-row">
+      <div class="pname">${escapeHtml(p.name)}</div>
+      <div class="pmeta">${fmt(p.reward)} xu<small>${p.exp||0} EXP</small></div>
+      <button onclick="requestRemovePoolItem('${p.id}')">✕</button>
+    </div>`).join('');
+}
+function addPoolItem(){
+  const name = document.getElementById('poolNameInput').value.trim();
+  const reward = parseInt(document.getElementById('poolRewardInput').value)||0;
+  const exp = parseInt(document.getElementById('poolExpInput').value)||0;
+  if(!name || reward<=0){ showToast('Điền đủ tên và số xu'); return; }
+  state.taskPool.push({id:uid(), name, reward, exp});
+  document.getElementById('poolNameInput').value=''; document.getElementById('poolRewardInput').value=''; document.getElementById('poolExpInput').value='';
+  renderPoolList();
+}
+function requestRemovePoolItem(id){
+  const p = state.taskPool.find(x=>x.id===id);
+  openConfirm('Xóa khỏi danh sách', `Xóa "${p.name}" khỏi danh sách nhiệm vụ tăng cường?`, ()=>{
+    state.taskPool = state.taskPool.filter(x=>x.id!==id);
+    renderPoolList();
+  }, true);
+}
+function savePoolSettings(){
+  // Save-only: this no longer re-randomizes today's picks. The new count
+  // takes effect starting from the next 05:00 reset.
+  state.settings.dailyBonusCount = Math.max(0, parseInt(document.getElementById('poolCountInput').value)||0);
+  saveState(); closeModal('poolModalBackdrop'); render();
+  showToast('Đã lưu cài đặt — áp dụng từ lần random tiếp theo');
+}
+
+/* ============ WEEKLY POOL MODAL ============ */
+function openWeeklyPoolModal(){
+  document.getElementById('weeklyPoolCountInput').value = state.settings.weeklyBonusCount||0;
+  document.getElementById('weeklyPoolNameInput').value=''; document.getElementById('weeklyPoolRewardInput').value=''; document.getElementById('weeklyPoolExpInput').value=''; document.getElementById('weeklyPoolConfirmInput').value='1';
+  renderWeeklyPoolList();
+  document.getElementById('weeklyPoolModalBackdrop').classList.add('open');
+}
+function renderWeeklyPoolList(){
+  const el = document.getElementById('weeklyPoolList');
+  if(state.weeklyTaskPool.length===0){ el.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);padding:8px 0;">Danh sách trống.</div>'; return; }
+  el.innerHTML = state.weeklyTaskPool.map(p=>`
+    <div class="pool-row">
+      <div class="pname">${escapeHtml(p.name)}</div>
+      <div class="pmeta">${fmt(p.reward)} xu<small>${p.exp||0} EXP · x${p.confirmCount||1} tích</small></div>
+      <button onclick="requestRemoveWeeklyPoolItem('${p.id}')">✕</button>
+    </div>`).join('');
+}
+function addWeeklyPoolItem(){
+  const name = document.getElementById('weeklyPoolNameInput').value.trim();
+  const reward = parseInt(document.getElementById('weeklyPoolRewardInput').value)||0;
+  const exp = parseInt(document.getElementById('weeklyPoolExpInput').value)||0;
+  const confirmCount = Math.max(1, parseInt(document.getElementById('weeklyPoolConfirmInput').value)||1);
+  if(!name || reward<=0){ showToast('Điền đủ tên và số xu'); return; }
+  state.weeklyTaskPool.push({id:uid(), name, reward, exp, confirmCount});
+  document.getElementById('weeklyPoolNameInput').value=''; document.getElementById('weeklyPoolRewardInput').value=''; document.getElementById('weeklyPoolExpInput').value=''; document.getElementById('weeklyPoolConfirmInput').value='1';
+  renderWeeklyPoolList();
+}
+function requestRemoveWeeklyPoolItem(id){
+  const p = state.weeklyTaskPool.find(x=>x.id===id);
+  openConfirm('Xóa khỏi danh sách', `Xóa "${p.name}" khỏi danh sách nhiệm vụ tuần?`, ()=>{
+    state.weeklyTaskPool = state.weeklyTaskPool.filter(x=>x.id!==id);
+    renderWeeklyPoolList();
+  }, true);
+}
+function saveWeeklyPoolSettings(){
+  state.settings.weeklyBonusCount = Math.max(0, parseInt(document.getElementById('weeklyPoolCountInput').value)||0);
+  saveState(); closeModal('weeklyPoolModalBackdrop'); render();
+  showToast('Đã lưu cài đặt — áp dụng từ lần random tuần tiếp theo');
+}
+
+/* ============ FUND MODAL ============ */
+function openFundModal(){ document.getElementById('fundNameInput').value=''; document.getElementById('fundModalBackdrop').classList.add('open'); }
+function saveFund(){
+  const name = document.getElementById('fundNameInput').value.trim();
+  const color = document.getElementById('fundColorInput').value;
+  if(!name){ showToast('Hãy đặt tên cho quỹ'); return; }
+  state.funds.push({id:uid(), name, color, balance:0, kind:'normal'});
+  saveState(); closeModal('fundModalBackdrop'); render();
+  showToast('Đã tạo quỹ mới');
+}
+
+/* ============ TRANSFERS ============ */
+function requestTransfer(){
+  const fromId = document.getElementById('xferFrom').value;
+  const toId = document.getElementById('xferTo').value;
+  const amount = parseInt(document.getElementById('xferAmount').value) || 0;
+  if(fromId===toId){ showToast('Chọn hai quỹ khác nhau'); return; }
+  if(amount<=0){ showToast('Nhập số xu hợp lệ'); return; }
+  const from = state.funds.find(f=>f.id===fromId); const to = state.funds.find(f=>f.id===toId);
+  if(from.balance < amount){ showToast('Quỹ không đủ số dư'); return; }
+  openConfirm('Xác nhận chuyển tiền', `Chuyển ${fmt(amount)} xu từ "${from.name}" sang "${to.name}"?`, ()=>doTransfer(fromId,toId,amount));
+}
+function doTransfer(fromId,toId,amount){
+  const from = state.funds.find(f=>f.id===fromId); const to = state.funds.find(f=>f.id===toId);
+  if(!from || from.balance < amount) return;
+  from.balance -= amount; to.balance += amount;
+  pushTransaction(`Chuyển: ${from.name} → ${to.name}`, -amount, from.id);
+  document.getElementById('xferAmount').value='';
+  recordNetWorthSnapshot(); saveState(); render();
+  showToast('Đã chuyển tiền');
+}
+
+/* ============ PACKAGES ============ */
+function openPackageModal(){
+  ['pkgNameInput','pkgTermInput','pkgRateInput','pkgPenaltyInput'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('packageModalBackdrop').classList.add('open');
+}
+function savePackage(){
+  const name = document.getElementById('pkgNameInput').value.trim();
+  const term = parseInt(document.getElementById('pkgTermInput').value)||0;
+  const rate = parseFloat(document.getElementById('pkgRateInput').value);
+  const penalty = parseFloat(document.getElementById('pkgPenaltyInput').value);
+  if(!name || term<=0 || isNaN(rate) || isNaN(penalty)){ showToast('Điền đầy đủ thông tin gói'); return; }
+  state.investPackages.push({id:uid(), name, termDays:term, ratePercent:rate, penaltyPercent:Math.max(0,Math.min(100,penalty))});
+  saveState(); closeModal('packageModalBackdrop'); render();
+  showToast('Đã tạo gói tiết kiệm');
+}
+function deletePackage(id){
+  const p = state.investPackages.find(x=>x.id===id);
+  openConfirm('Xóa gói tiết kiệm', `Xóa gói "${p.name}"? Các khoản đã gửi theo gói này vẫn giữ nguyên điều khoản.`, ()=>{
+    state.investPackages = state.investPackages.filter(x=>x.id!==id);
+    saveState(); render();
+  }, true);
+}
+
+/* ============ INVEST ACTIONS ============ */
+function requestInvest(){
+  const fromId = document.getElementById('investFromFund').value;
+  const pkgId = document.getElementById('investPackageSelect').value;
+  const amount = parseInt(document.getElementById('investAmount').value)||0;
+  const pkg = state.investPackages.find(p=>p.id===pkgId);
+  const from = state.funds.find(f=>f.id===fromId);
+  if(!pkg){ showToast('Chưa có gói tiết kiệm nào — hãy tạo một gói trước'); return; }
+  if(amount<=0){ showToast('Nhập số xu hợp lệ'); return; }
+  if(!from || from.balance < amount){ showToast('Quỹ không đủ số dư'); return; }
+  openConfirm('Xác nhận gửi tiết kiệm', `Gửi ${fmt(amount)} xu từ "${from.name}" vào gói "${pkg.name}" (${pkg.termDays} ngày, +${pkg.ratePercent}%)? Rút trước hạn sẽ bị phạt ${pkg.penaltyPercent}%.`, ()=>doInvest(fromId,pkgId,amount));
+}
+function doInvest(fromId,pkgId,amount){
+  const pkg = state.investPackages.find(p=>p.id===pkgId);
+  const from = state.funds.find(f=>f.id===fromId);
+  if(!pkg || !from || from.balance<amount) return;
+  from.balance -= amount;
+  const now = Date.now();
+  state.investments.unshift({
+    id:uid(), packageName:pkg.name, ratePercent:pkg.ratePercent, termDays:pkg.termDays, penaltyPercent:pkg.penaltyPercent,
+    principal:amount, startTs:now, maturityTs: now + pkg.termDays*DAY_MS, status:'active', payoutAmount:null
+  });
+  pushTransaction(`Gửi tiết kiệm (${pkg.name}) từ ${from.name}`, -amount, from.id);
+  document.getElementById('investAmount').value='';
+  recordNetWorthSnapshot(); saveState(); render();
+  showToast('Đã gửi tiết kiệm');
+}
+function requestClaimInvestment(id){
+  const inv = state.investments.find(i=>i.id===id);
+  if(!inv || inv.status!=='active') return;
+  if(Date.now() < inv.maturityTs){ showToast('Chưa đến ngày đáo hạn'); return; }
+  const payout = Math.round(inv.principal * (1 + inv.ratePercent/100));
+  openConfirm('Nhận lãi tiết kiệm', `Nhận ${fmt(payout)} xu (gốc ${fmt(inv.principal)} + lãi ${fmt(payout-inv.principal)}) vào Ví chung?`, ()=>claimInvestment(id));
+}
+function claimInvestment(id){
+  const inv = state.investments.find(i=>i.id===id);
+  if(!inv || inv.status!=='active') return;
+  const now = Date.now();
+  if(now < inv.maturityTs) return;
+  const payout = Math.round(inv.principal * (1 + inv.ratePercent/100));
+  inv.status='matured'; inv.payoutAmount = payout;
+  const gen = state.funds.find(f=>f.id==='general');
+  gen.balance += payout;
+  pushTransaction(`Đáo hạn: ${inv.packageName} (+lãi)`, payout, 'general');
+  trimInvestmentHistory();
+  recordNetWorthSnapshot(); saveState(); render();
+  showToast(`Nhận ${fmt(payout)} xu cả gốc lẫn lãi!`);
+}
+function requestEarlyWithdraw(id){
+  const inv = state.investments.find(i=>i.id===id);
+  if(!inv) return;
+  const payout = Math.round(inv.principal * (1 - inv.penaltyPercent/100));
+  const loss = inv.principal - payout;
+  openConfirm('Rút tiền sớm?', `Bạn sẽ mất toàn bộ lãi và bị phạt ${inv.penaltyPercent}% số gốc (mất ${fmt(loss)} xu). Bạn sẽ nhận về ${fmt(payout)} xu thay vì ${fmt(inv.principal)} xu ban đầu.`, ()=>earlyWithdraw(id), true);
+}
+function earlyWithdraw(id){
+  const inv = state.investments.find(i=>i.id===id);
+  if(!inv || inv.status!=='active') return;
+  const payout = Math.round(inv.principal * (1 - inv.penaltyPercent/100));
+  inv.status='withdrawn'; inv.payoutAmount = payout;
+  const gen = state.funds.find(f=>f.id==='general');
+  gen.balance += payout;
+  pushTransaction(`Rút sớm: ${inv.packageName} (bị phạt)`, payout, 'general');
+  trimInvestmentHistory();
+  recordNetWorthSnapshot(); saveState(); render();
+  showToast(`Đã rút sớm, nhận ${fmt(payout)} xu`);
+}
+
+/* ============ SHOP ============ */
+function openShopModal(){ document.getElementById('shopNameInput').value=''; document.getElementById('shopPriceInput').value=''; document.getElementById('shopModalBackdrop').classList.add('open'); }
+function saveShopItem(){
+  const name = document.getElementById('shopNameInput').value.trim();
+  const price = parseInt(document.getElementById('shopPriceInput').value)||0;
+  if(!name || price<=0){ showToast('Điền đủ tên và giá'); return; }
+  state.shopItems.push({id:uid(), name, price});
+  saveState(); closeModal('shopModalBackdrop'); render();
+  showToast('Đã thêm món hàng');
+}
+function deleteShopItem(id){
+  const item = state.shopItems.find(s=>s.id===id);
+  openConfirm('Xóa món hàng', `Xóa "${item.name}" khỏi cửa hàng?`, ()=>{
+    state.shopItems = state.shopItems.filter(s=>s.id!==id);
+    saveState(); render();
+  }, true);
+}
+function buyShopItem(id){
+  const item = state.shopItems.find(s=>s.id===id);
+  const gen = state.funds.find(f=>f.id==='general');
+  if(!item) return;
+  if(gen.balance < item.price){ showToast('Không đủ xu trong Ví chung'); return; }
+  openConfirm('Xác nhận mua', `Mua "${item.name}" với giá ${fmt(item.price)} xu?`, ()=>{
+    gen.balance -= item.price;
+    state.inventory.push({id:uid(), name:item.name, purchasedTs:Date.now()});
+    pushTransaction(`Mua: ${item.name}`, -item.price, 'general');
+    pushPurchaseLog(item.name, item.price);
+    recordNetWorthSnapshot(); saveState(); render();
+    showToast(`Đã mua ${item.name}! Xem trong "Vật phẩm đã mua".`);
+  });
+}
+function requestUseItem(id){
+  const it = state.inventory.find(i=>i.id===id);
+  if(!it) return;
+  openConfirm('Sử dụng vật phẩm', `Dùng "${it.name}" ngay bây giờ? Vật phẩm sẽ biến mất sau khi dùng.`, ()=>useItem(id));
+}
+function useItem(id){
+  const it = state.inventory.find(i=>i.id===id);
+  if(!it) return;
+  state.inventory = state.inventory.filter(i=>i.id!==id);
+  saveState(); render();
+  showToast(`Đã dùng ${it.name}. Tận hưởng nhé!`);
+}
+
+/* ============ LEVEL / EXP ============ */
+function getLevelInfo(){
+  const levels = [...state.levels].sort((a,b)=>a.expNeeded-b.expNeeded);
+  let current=null, next=null;
+  for(const l of levels){ if(state.playerExp >= l.expNeeded) current=l; else { next=l; break; } }
+  return {current, next, levels};
+}
+function openLevelModal(){ renderLevelModalList(); document.getElementById('levelFormWrap').style.display='none'; document.getElementById('levelModalBackdrop').classList.add('open'); }
+function toggleLevelForm(){
+  const el = document.getElementById('levelFormWrap');
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+function renderLevelModalList(){
+  const el = document.getElementById('levelList');
+  const levels = [...state.levels].sort((a,b)=>a.expNeeded-b.expNeeded);
+  if(levels.length===0){ el.innerHTML = '<div style="font-size:12px;color:var(--ink-soft);padding:10px 0;">Chưa có dữ liệu cấp độ.</div>'; return; }
+  el.innerHTML = levels.map(l=>`
+    <div class="level-row">
+      <div class="lvl-num">${l.level}</div>
+      <div class="lvl-exp">${fmt(l.expNeeded)}</div>
+      <div class="lvl-title">${escapeHtml(l.title)}</div>
+      <button onclick="deleteLevelEntry('${l.id}')">🗑</button>
+    </div>`).join('');
+}
+function addLevelEntry(){
+  const lvl = parseInt(document.getElementById('levelNumInput').value);
+  const exp = parseInt(document.getElementById('levelExpInput').value);
+  const title = document.getElementById('levelTitleInput').value.trim();
+  if(isNaN(lvl) || isNaN(exp) || !title){ showToast('Điền đủ thông tin cấp độ'); return; }
+  state.levels.push({id:uid(), level:lvl, expNeeded:exp, title});
+  document.getElementById('levelNumInput').value=''; document.getElementById('levelExpInput').value=''; document.getElementById('levelTitleInput').value='';
+  saveState(); renderLevelModalList(); renderLevelBadge();
+  showToast('Đã thêm cấp độ');
+}
+function deleteLevelEntry(id){
+  const l = state.levels.find(x=>x.id===id);
+  openConfirm('Xóa cấp độ', `Xóa cấp độ ${l.level} — "${l.title}"?`, ()=>{
+    state.levels = state.levels.filter(x=>x.id!==id);
+    saveState(); renderLevelModalList(); renderLevelBadge();
+  }, true);
+}
+function requestClearAllLevels(){
+  openConfirm('Xóa toàn bộ dữ liệu cấp độ', 'Toàn bộ danh sách cấp độ sẽ bị xóa vĩnh viễn và không thể khôi phục. Bạn có chắc chắn?', ()=>{
+    state.levels = [];
+    saveState(); renderLevelModalList(); renderLevelBadge();
+    showToast('Đã xóa toàn bộ dữ liệu cấp độ');
+  }, true);
+}
+document.getElementById('levelExcelInput').addEventListener('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+      let added = 0;
+      rows.forEach(r=>{
+        if(!r || r.length<3) return;
+        const lvl = Number(r[0]); const exp = Number(r[1]); const title = (r[2]===undefined||r[2]===null) ? '' : String(r[2]).trim();
+        if(!isNaN(lvl) && !isNaN(exp) && title){
+          state.levels.push({id:uid(), level:lvl, expNeeded:exp, title});
+          added++;
+        }
+      });
+      saveState(); renderLevelModalList(); renderLevelBadge();
+      showToast(added>0 ? `Đã nhập ${added} cấp độ từ Excel` : 'Không tìm thấy dữ liệu hợp lệ trong file');
+    }catch(err){ showToast('Không đọc được file Excel'); }
+    e.target.value='';
+  };
+  reader.readAsArrayBuffer(file);
+});
+function renderLevelBadge(){
+  const {current, next} = getLevelInfo();
+  const nameEl = document.getElementById('levelTitleDisplay');
+  const fillEl = document.getElementById('expProgressFill');
+  const detailEl = document.getElementById('expDetail');
+  if(!current){
+    nameEl.textContent = state.levels.length ? 'Chưa đạt cấp độ nào' : 'Chưa có dữ liệu cấp độ';
+    fillEl.style.width = '0%';
+    detailEl.textContent = `${fmt(state.playerExp)} EXP`;
+    return;
+  }
+  nameEl.textContent = `Cấp ${current.level} · ${current.title}`;
+  if(next){
+    const span = next.expNeeded - current.expNeeded;
+    const progress = span>0 ? Math.min(100, Math.max(0, ((state.playerExp-current.expNeeded)/span)*100)) : 100;
+    fillEl.style.width = progress+'%';
+    detailEl.textContent = `${fmt(state.playerExp)} / ${fmt(next.expNeeded)} EXP đến Cấp ${next.level}`;
+  } else {
+    fillEl.style.width = '100%';
+    detailEl.textContent = `${fmt(state.playerExp)} EXP · Cấp tối đa hiện có`;
+  }
+}
+
+/* ============ CHART ============ */
+function vnWeekdayShort(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dow = new Date(Date.UTC(y,m-1,d)).getUTCDay(); // 0=Sun..6=Sat
+  return ['CN','T2','T3','T4','T5','T6','T7'][dow];
+}
+function drawChart(){
+  const svg = document.getElementById('chartSvg');
+  // Always show exactly the last 7 calendar days (filling in 0 for days with
+  // no completions), so the bars are a true day-by-day comparison rather
+  // than whatever sparse entries happen to exist.
+  const days = []; for(let i=6;i>=0;i--) days.push(gameDateOffset(i));
+  const earningsMap = {}; state.dailyEarnings.forEach(e=>{ earningsMap[e.date] = e.amount; });
+  const values = days.map(d=> earningsMap[d]||0);
+  const today = todayStr();
+
+  const W=320,H=140,padTop=12,padBottom=26,padSide=12,gap=8;
+  const max = Math.max(...values, 1);
+  const n = days.length;
+  const barW = (W - padSide*2 - gap*(n-1)) / n;
+  let bars = '';
+  days.forEach((d,i)=>{
+    const v = values[i];
+    const x = padSide + i*(barW+gap);
+    const barH = v>0 ? Math.max(3, (v/max) * (H-padTop-padBottom)) : 0;
+    const y = H-padBottom-barH;
+    const isToday = d===today;
+    if(barH>0){
+      bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="5" fill="${isToday?'#B8863B':'#2F6F4E'}" opacity="${isToday?1:0.82}"/>`;
+    } else {
+      bars += `<rect x="${x.toFixed(1)}" y="${(H-padBottom-2).toFixed(1)}" width="${barW.toFixed(1)}" height="2" rx="1" fill="#DFD8C6"/>`;
+    }
+    bars += `<text x="${(x+barW/2).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="8.5" fill="#9AA391">${vnWeekdayShort(d)}</text>`;
+  });
+  svg.innerHTML = bars;
+  const todayAmount = values[values.length-1];
+  const avg = Math.round(values.reduce((s,v)=>s+v,0)/values.length);
+  document.getElementById('chartCaption').textContent = `7 ngày gần nhất · hôm nay +${fmt(todayAmount)} xu · TB ${fmt(avg)} xu/ngày`;
+}
+
+/* ============ RENDER ============ */
+function render(){
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'});
+  const gen = state.funds.find(f=>f.id==='general');
+  document.getElementById('mainBalance').innerHTML = fmt(gen.balance)+'<span class="unit">xu</span>';
+
+  const streak = computeStreak();
+
+  const dailyTasks = state.tasks.filter(t=>t.type==='repeat');
+  const bonusTasks = state.tasks.filter(t=>t.type==='once' && t.period!=='weekly');
+  const weeklyTasks = state.tasks.filter(t=>t.period==='weekly');
+  const activeCombined = [...dailyTasks, ...bonusTasks.filter(t=>t.active || isDoneToday(t))];
+  const doneToday = activeCombined.filter(isDoneToday).length;
+  document.getElementById('taskSub').textContent = `${doneToday}/${activeCombined.length} nhiệm vụ hôm nay`;
+
+  renderTaskList('dailyTaskList', dailyTasks, 'Chưa có nhiệm vụ hằng ngày nào.');
+  renderTaskList('bonusTaskList', bonusTasks, 'Chưa có nhiệm vụ tăng cường nào hôm nay. Thêm vào danh sách để hệ thống tự chọn!');
+  renderWeeklyTaskList('weeklyTaskList', weeklyTasks, 'Chưa có nhiệm vụ tuần nào. Vào "Danh sách & cài đặt" để thêm nhiệm vụ cho hệ thống chọn mỗi thứ 2!');
+
+  renderCalendar();
+  renderFunds();
+  renderPackages();
+  renderInvestments();
+  renderShop();
+  renderLevelBadge();
+
+  const txListEl = document.getElementById('txList');
+  txListEl.innerHTML = state.transactions.length===0 ? `<div class="empty">Chưa có giao dịch nào.</div>` :
+    state.transactions.map(tx=>{
+      const positive = tx.amount>=0;
+      return `<div class="task"><div class="info"><div class="name" style="font-size:13px;">${escapeHtml(tx.desc)}</div>
+        <div class="meta">${new Date(tx.ts).toLocaleDateString('vi-VN')}</div></div>
+        <div class="reward" style="color:${positive?'var(--jade)':'var(--brick)'}">${positive?'+':''}${fmt(tx.amount)}</div></div>`;
+    }).join('');
+
+  document.getElementById('statTasks').textContent = state.tasks.reduce((s,t)=>s+(t.timesDone||0),0);
+  document.getElementById('statCoins').textContent = fmt(state.stats.totalCoinsEarned||0);
+  document.getElementById('statStreak').textContent = Math.max(state.stats.maxStreak, streak);
+
+  if(document.getElementById('view-progress').classList.contains('active')) drawChart();
+}
+
+function renderTaskList(elId, tasks, emptyMsg){
+  const el = document.getElementById(elId);
+  const visible = tasks.filter(t=> t.type==='repeat' ? true : (t.active || isDoneToday(t)));
+  if(visible.length===0){ el.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
+  el.innerHTML = visible.map(t=>{
+    const done = isDoneToday(t);
+    let tag = 'Riêng';
+    if(t.type==='repeat') tag = 'Lặp lại';
+    else if(t.source==='pool') tag = 'Danh sách';
+    return `<div class="task ${done?'done':''}" onclick="${done?'':`requestCompleteTask('${t.id}')`}">
+      <div class="tick">${done?'✓':''}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(t.name)}</div>
+        <div class="meta"><span class="tag">${tag}</span><span>${t.timesDone||0} lần xong</span><span class="exp">${t.exp||0} EXP</span></div>
+      </div>
+      <div class="reward">+${t.reward}<small>+${t.exp||0} EXP</small></div>
+      ${done ? '<span class="lockmark">🔒</span>' : `<button class="del" onclick="deleteTask('${t.id}', event)">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+/* Weekly tasks show a tick-progress bar instead of a single checkbox — the
+   whole row is not clickable; a dedicated "Tích +1" button advances the
+   counter, and only the final tick (which grants the reward) asks for
+   irreversible confirmation, via tickWeeklyTask(). */
+function renderWeeklyTaskList(elId, tasks, emptyMsg){
+  const el = document.getElementById(elId);
+  const visible = tasks.filter(t=> t.active || isDoneToday(t));
+  if(visible.length===0){ el.innerHTML = `<div class="empty">${emptyMsg}</div>`; return; }
+  el.innerHTML = visible.map(t=>{
+    const done = isDoneToday(t);
+    const target = t.confirmTarget||1;
+    const progress = Math.min(target, t.confirmProgress||0);
+    const pct = target>0 ? (progress/target*100) : 100;
+    const tickedToday = t.lastTickDate === todayStr();
+    let actionBtn;
+    if(done){ actionBtn = ''; }
+    else if(tickedToday){ actionBtn = `<button class="use-btn" disabled style="opacity:0.45;">Đã tích hôm nay</button>`; }
+    else{ actionBtn = `<button class="use-btn" onclick="tickWeeklyTask('${t.id}')">Tích +1</button>`; }
+    return `<div class="task ${done?'done':''}">
+      <div class="tick">${done?'✓':''}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(t.name)}</div>
+        <div class="meta"><span class="tag">Theo tuần</span><span>${t.timesDone||0} lần xong</span><span class="exp">${t.exp||0} EXP</span></div>
+        ${!done ? `<div class="progress-bar" style="margin:7px 0 3px;"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--ink-soft);">${progress}/${target} lần tích${tickedToday ? ' · hẹn mai 5h sáng' : ''}</div>` : ''}
+      </div>
+      <div class="reward">+${t.reward}<small>+${t.exp||0} EXP</small></div>
+      ${done ? '<span class="lockmark">🔒</span>' : `${actionBtn}<button class="del" onclick="deleteTask('${t.id}', event)">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+const VN_MONTH_NAMES = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+function renderCalendar(){
+  const gd = gameDateFor(Date.now()); // UTC-noon Date whose Y/M/D = current VN game-day
+  const year = gd.getUTCFullYear(), month = gd.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(year, month+1, 0)).getUTCDate();
+  const firstDow = new Date(Date.UTC(year, month, 1)).getUTCDay(); // 0=Sun..6=Sat
+  const leadingBlanks = (firstDow===0) ? 6 : firstDow-1; // Monday-first grid
+
+  document.getElementById('calTitle').textContent = `${VN_MONTH_NAMES[month]}, ${year}`;
+
+  const set = new Set(state.streakDates);
+  const today = todayStr();
+  let html = '';
+  for(let i=0;i<leadingBlanks;i++) html += `<div class="cal-cell blank"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const filled = set.has(key);
+    const isToday = key===today;
+    html += `<div class="cal-cell ${filled?'filled':''} ${isToday?'today':''}" title="${key}">${day}</div>`;
+  }
+  document.getElementById('calendarGrid').innerHTML = html;
+}
+
+function renderFunds(){
+  document.getElementById('fundList').innerHTML = state.funds.map(f=>`
+    <div class="fund"><div class="dot" style="background:${f.color}"></div>
+      <div class="info"><div class="name">${escapeHtml(f.name)}</div></div>
+      <div class="amount">${fmt(f.balance)} xu</div>
+    </div>`).join('');
+  const allOptionsHtml = state.funds.map(f=>`<option value="${f.id}">${escapeHtml(f.name)} (${fmt(f.balance)})</option>`).join('');
+  document.getElementById('xferFrom').innerHTML = allOptionsHtml;
+  document.getElementById('xferTo').innerHTML = allOptionsHtml;
+  document.getElementById('investFromFund').innerHTML = allOptionsHtml;
+}
+
+function renderPackages(){
+  const el = document.getElementById('packageList');
+  if(state.investPackages.length===0){ el.innerHTML = `<div class="empty">Chưa có gói nào. Tạo gói đầu tiên!</div>`; }
+  else{
+    el.innerHTML = state.investPackages.map(p=>`
+      <div class="pkg">
+        <div class="pkg-top"><div class="pkg-name">${escapeHtml(p.name)}</div><div class="pkg-rate">+${p.ratePercent}%</div></div>
+        <div class="pkg-meta"><span>Kỳ hạn ${p.termDays} ngày</span><span>Phạt rút sớm ${p.penaltyPercent}%</span></div>
+        <button class="pkg-del" onclick="deletePackage('${p.id}')">Xóa gói</button>
+      </div>`).join('');
+  }
+  document.getElementById('investPackageSelect').innerHTML = state.investPackages.map(p=>`<option value="${p.id}">${escapeHtml(p.name)} — +${p.ratePercent}%/${p.termDays} ngày</option>`).join('') || '<option value="">Chưa có gói nào</option>';
+}
+
+function renderInvestments(){
+  const now = Date.now();
+  const active = state.investments.filter(i=>i.status==='active');
+  const history = state.investments.filter(i=>i.status!=='active');
+
+  const activeEl = document.getElementById('activeInvestList');
+  if(active.length===0){ activeEl.innerHTML = `<div class="empty">Chưa có khoản đầu tư nào đang hoạt động.</div>`; }
+  else{
+    activeEl.innerHTML = active.map(inv=>{
+      const matured = now >= inv.maturityTs;
+      const progress = Math.min(1, Math.max(0, (now-inv.startTs)/(inv.maturityTs-inv.startTs)))*100;
+      const maturityValue = Math.round(inv.principal*(1+inv.ratePercent/100));
+      const interest = maturityValue - inv.principal;
+      const earlyValue = Math.round(inv.principal*(1-inv.penaltyPercent/100));
+      const dateStr = new Date(inv.maturityTs).toLocaleDateString('vi-VN');
+      return `<div class="inv-item">
+        <div class="inv-top"><div class="inv-name">${escapeHtml(inv.packageName)}</div>
+          <span class="status-badge ${matured?'matured':'active'}">${matured?'ĐÃ ĐÁO HẠN':'ĐANG GỬI'}</span></div>
+        <div class="inv-principal" style="margin-top:4px;">${fmt(inv.principal)} xu gốc</div>
+        <div class="inv-meta">${matured ? `Đủ điều kiện nhận <b>${fmt(maturityValue)}</b> xu (lãi +${fmt(interest)})` : `Đáo hạn ${dateStr} · lãi dự kiến +${fmt(interest)} xu nếu giữ đủ hạn`}</div>
+        ${!matured ? `<div class="inv-meta" style="margin-top:-6px;">Nếu rút ngay: nhận ${fmt(earlyValue)} xu (mất ${fmt(inv.principal-earlyValue)} xu)</div>` : ''}
+        <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+        <div class="inv-actions">
+          ${matured ? `<button class="claim" onclick="requestClaimInvestment('${inv.id}')">Nhận ${fmt(maturityValue)} xu</button>`
+                     : `<button class="early" onclick="requestEarlyWithdraw('${inv.id}')">Rút sớm</button>`}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const histEl = document.getElementById('investHistoryList');
+  if(history.length===0){ histEl.innerHTML = `<div class="empty">Chưa có lịch sử.</div>`; }
+  else{
+    histEl.innerHTML = history.map(inv=>`
+      <div class="inv-item">
+        <div class="inv-top"><div class="inv-name">${escapeHtml(inv.packageName)}</div>
+          <span class="status-badge ${inv.status}">${inv.status==='matured'?'ĐÃ NHẬN LÃI':'ĐÃ RÚT SỚM'}</span></div>
+        <div class="inv-meta">Gốc ${fmt(inv.principal)} xu → nhận ${fmt(inv.payoutAmount)} xu</div>
+      </div>`).join('');
+  }
+}
+
+function renderShop(){
+  const el = document.getElementById('shopList');
+  if(state.shopItems.length===0){ el.innerHTML = `<div class="empty">Chưa có món hàng nào. Thêm sở thích của bạn vào đây!</div>`; }
+  else{
+    el.innerHTML = state.shopItems.map(item=>`
+      <div class="shop-item">
+        <div class="info"><div class="name">${escapeHtml(item.name)}</div><div class="price">${fmt(item.price)} xu</div></div>
+        <button class="buy-btn" onclick="buyShopItem('${item.id}')">Mua</button>
+        <button class="shop-del" onclick="deleteShopItem('${item.id}')">✕</button>
+      </div>`).join('');
+  }
+  const ownedEl = document.getElementById('ownedList');
+  if(state.inventory.length===0){ ownedEl.innerHTML = `<div class="empty">Chưa sở hữu vật phẩm nào.</div>`; }
+  else{
+    ownedEl.innerHTML = state.inventory.map(it=>`
+      <div class="shop-item">
+        <div class="info"><div class="name">${escapeHtml(it.name)}</div><div class="price" style="color:var(--ink-soft);">Mua ngày ${new Date(it.purchasedTs).toLocaleDateString('vi-VN')}</div></div>
+        <button class="use-btn" onclick="requestUseItem('${it.id}')">Dùng</button>
+      </div>`).join('');
+  }
+  const histEl = document.getElementById('shopHistoryList');
+  histEl.innerHTML = state.purchaseLog.length===0 ? `<div class="empty">Chưa mua gì.</div>` :
+    state.purchaseLog.map(p=>`<div class="task"><div class="info"><div class="name" style="font-size:13px;">${escapeHtml(p.name)}</div>
+      <div class="meta">${new Date(p.ts).toLocaleDateString('vi-VN')}</div></div>
+      <div class="reward" style="color:var(--brick)">-${fmt(p.price)}</div></div>`).join('');
+}
+
+/* periodic save + snapshot + matured check + day-boundary check */
+setInterval(()=>{
+  generateDailyBonusIfNeeded();
+  generateWeeklyBonusIfNeeded();
+  recordNetWorthSnapshot();
+  checkMaturedInvestments(false);
+  saveState();
+  render();
+}, 30000);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden){ recordNetWorthSnapshot(); saveStateImmediate(); }
+  else { generateDailyBonusIfNeeded(); generateWeeklyBonusIfNeeded(); checkMaturedInvestments(false); render(); }
+});
+
+document.getElementById('backupImportInput').addEventListener('change', function(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    let parsed;
+    try{ parsed = JSON.parse(evt.target.result); }
+    catch(err){ showToast('File không hợp lệ'); e.target.value=''; return; }
+    openConfirm('Khôi phục dữ liệu', 'Toàn bộ dữ liệu hiện tại trên máy sẽ bị THAY THẾ bằng dữ liệu trong file sao lưu này. Bạn có chắc chắn?', ()=>{
+      state = parsed;
+      ensureStateDefaults();
+      saveStateImmediate();
+      recordNetWorthSnapshot();
+      render();
+      showToast('Đã khôi phục dữ liệu từ file');
+    }, true);
+    e.target.value='';
+  };
+  reader.readAsText(file);
+});
+
+/* init */
+loadState();
+</script>
+</body>
+</html>
